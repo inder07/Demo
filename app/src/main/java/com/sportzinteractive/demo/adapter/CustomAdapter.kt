@@ -1,47 +1,64 @@
 package com.sportzinteractive.demo.adapter
 
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
+import androidx.recyclerview.widget.AsyncListDiffer
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
+import com.sportzinteractive.demo.databinding.CardViewDesignBinding
 import com.sportzinteractive.demo.models.MatchDetails
-import com.sportzinteractive.demo.R
 
-class CustomAdapter(private val mList: List<MatchDetails>) :
-    RecyclerView.Adapter<CustomAdapter.ViewHolder>() {
+class CustomAdapter :
+    RecyclerView.Adapter<CustomAdapter.CustomAdapterViewHolder>() {
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.card_view_design, parent, false)
+    inner class CustomAdapterViewHolder(val binding: CardViewDesignBinding) :
+        RecyclerView.ViewHolder(binding.root)
 
-        return ViewHolder(view)
-    }
+    private val differCallback = object : DiffUtil.ItemCallback<MatchDetails>() {
+        override fun areItemsTheSame(
+            oldItem: MatchDetails,
+            newItem: MatchDetails
+        ): Boolean {
+            return oldItem.Name_Full == newItem.Name_Full
+        }
 
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-
-        val matchDetails = mList[position]
-        var appendingText = ""
-        if (matchDetails.Iscaptain)
-            appendingText = " (c)"
-        if (matchDetails.Iskeeper)
-            appendingText = " (wk)"
-        holder.textView.text = matchDetails.Name_Full.plus(appendingText)
-
-        holder.itemView.setOnClickListener {
-            onItemClickListener?.let {
-                it(matchDetails)
-            }
+        override fun areContentsTheSame(
+            oldItem: MatchDetails,
+            newItem: MatchDetails
+        ): Boolean {
+            return oldItem == newItem
         }
 
     }
 
-    override fun getItemCount(): Int {
-        return mList.size
+    val differ = AsyncListDiffer(this, differCallback)
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CustomAdapterViewHolder {
+        val binding =
+            CardViewDesignBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        return CustomAdapterViewHolder(binding)
     }
 
-    class ViewHolder(ItemView: View) : RecyclerView.ViewHolder(ItemView) {
-        val textView: TextView = itemView.findViewById(R.id.textView)
+    override fun onBindViewHolder(holder: CustomAdapterViewHolder, position: Int) {
+        val matchDetails =  differ.currentList[position]
+        holder.binding.apply {
+            var appendingText = ""
+            if (matchDetails.Iscaptain)
+                appendingText = " (c)"
+            if (matchDetails.Iskeeper)
+                appendingText = " (wk)"
+            textView.text = matchDetails.Name_Full.plus(appendingText)
+
+            root.setOnClickListener {
+                onItemClickListener?.let {
+                    it(matchDetails)
+                }
+            }
+        }
+    }
+
+    override fun getItemCount(): Int {
+        return differ.currentList.size
     }
 
     private var onItemClickListener: ((MatchDetails) -> Unit)? = null

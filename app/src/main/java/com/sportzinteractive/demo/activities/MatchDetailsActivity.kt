@@ -41,7 +41,7 @@ class MatchDetailsActivity : AppCompatActivity(), View.OnClickListener {
     private lateinit var rvHomeAdapter: CustomAdapter
     private lateinit var rvAwayAdapter: CustomAdapter
 
-    lateinit var laoder : CustomDialog
+    lateinit var loader : CustomDialog
 
     private var dialogBinding: DialogPlayerDetailsBinding? = null
     var dialog: Dialog? = null
@@ -50,8 +50,8 @@ class MatchDetailsActivity : AppCompatActivity(), View.OnClickListener {
         super.onCreate(savedInstanceState)
         binding = DataBindingUtil.setContentView(this, R.layout.activity_match_details)
         binding.listener = this
-
-        laoder= CustomDialog(this)
+        dialog = Dialog(this)
+        loader= CustomDialog(this)
 
         getSupportActionBar()?.setTitle("Match Details");
         getSupportActionBar()?.setDisplayHomeAsUpEnabled(true);
@@ -83,12 +83,13 @@ class MatchDetailsActivity : AppCompatActivity(), View.OnClickListener {
 
         }
 
-        initRv()
+        setupHomeRv()
+        setupAwayRv()
 
         val url = intent.extras?.getString("URL")
 
         val queue: RequestQueue = Volley.newRequestQueue(applicationContext)
-        laoder.show()
+        loader.show()
         val request = JsonObjectRequest(Request.Method.GET, url, null, { response ->
             try {
                 val matchDetails = JSONObject(response.getString("Matchdetail"))
@@ -147,7 +148,7 @@ class MatchDetailsActivity : AppCompatActivity(), View.OnClickListener {
                 }
                 addDataToAwayRv(teamAwayDtlsArr)
 
-                laoder.dismiss()
+                loader.dismiss()
 
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -187,12 +188,7 @@ class MatchDetailsActivity : AppCompatActivity(), View.OnClickListener {
         dialog?.setCancelable(true)
         dialog?.show()
         val window = dialog?.window
-        window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-    }
-
-    fun initRv() {
-        binding.rvHome.layoutManager = LinearLayoutManager(this)
-        binding.rvAway.layoutManager = LinearLayoutManager(this)
+        window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
     }
 
     fun addDataToHomeRv(teamHomeDtlsArr: JSONArray) {
@@ -234,14 +230,7 @@ class MatchDetailsActivity : AppCompatActivity(), View.OnClickListener {
             )
             data.add(item)
         }
-
-        rvHomeAdapter = CustomAdapter(data)
-
-        binding.rvHome.adapter = rvHomeAdapter
-
-        rvHomeAdapter.setOnItemClickListener {
-            showPlayerDetailsDialog(it)
-        }
+        rvHomeAdapter.differ.submitList(data)
     }
 
     fun addDataToAwayRv(teamAwayDtlsArr: JSONArray) {
@@ -283,14 +272,7 @@ class MatchDetailsActivity : AppCompatActivity(), View.OnClickListener {
             )
             data.add(item)
         }
-
-        rvAwayAdapter = CustomAdapter(data)
-
-        binding.rvAway.adapter = rvAwayAdapter
-
-        rvAwayAdapter.setOnItemClickListener {
-            showPlayerDetailsDialog(it)
-        }
+        rvAwayAdapter.differ.submitList(data)
     }
 
     override fun onClick(view: View?) {
@@ -299,5 +281,27 @@ class MatchDetailsActivity : AppCompatActivity(), View.OnClickListener {
     override fun onSupportNavigateUp(): Boolean {
         onBackPressed()
         return true
+    }
+
+    private fun setupHomeRv() {
+        rvHomeAdapter = CustomAdapter()
+        binding.rvHome.apply {
+            adapter = rvHomeAdapter
+            layoutManager = LinearLayoutManager(this@MatchDetailsActivity)
+        }
+        rvHomeAdapter.setOnItemClickListener {
+            showPlayerDetailsDialog(it)
+        }
+    }
+
+    private fun setupAwayRv() {
+        rvAwayAdapter = CustomAdapter()
+        binding.rvAway.apply {
+            adapter = rvAwayAdapter
+            layoutManager = LinearLayoutManager(this@MatchDetailsActivity)
+        }
+        rvAwayAdapter.setOnItemClickListener {
+            showPlayerDetailsDialog(it)
+        }
     }
 }
